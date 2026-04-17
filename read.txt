@@ -1,0 +1,6 @@
+phoenix-plants/
+├── server.js
+├── package.json
+└── public/
+    ├── index.html
+    └── admin.html

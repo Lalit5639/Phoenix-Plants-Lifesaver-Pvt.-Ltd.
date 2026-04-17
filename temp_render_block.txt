@@ -1,0 +1,54 @@
+    function renderProducts() {
+        let filtered = [...currentProducts];
+        const searchTerm = searchInput.value.toLowerCase();
+        if (searchTerm) filtered = filtered.filter(p => p.name.toLowerCase().includes(searchTerm));
+        const activeCategories = Array.from(categoryCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (activeCategories.length > 0) filtered = filtered.filter(p => activeCategories.includes(p.category));
+        const minPrice = parseInt(document.getElementById('minPrice').value) || 0;
+        const maxPrice = parseInt(document.getElementById('maxPrice').value) || 100000;
+        filtered = filtered.filter(p => p.price >= minPrice && p.price <= maxPrice);
+        const selectedDiscount = document.querySelector('input[name="discount"]:checked').value;
+        if (selectedDiscount !== 'all') filtered = filtered.filter(p => p.discount >= parseInt(selectedDiscount));
+        const sortValue = sortSelect.value;
+        if (sortValue === 'priceLow') filtered.sort((a,b) => a.price - b.price);
+        if (sortValue === 'priceHigh') filtered.sort((a,b) => b.price - a.price);
+        if (sortValue === 'discountHigh') filtered.sort((a,b) => b.discount - a.discount);
+        productCountSpan.innerText = `Showing ${filtered.length} products`;
+        const totalPages = Math.ceil(filtered.length / itemsPerPage);
+        const start = (currentPage - 1) * itemsPerPage;
+        const paginatedItems = filtered.slice(start, start + itemsPerPage);
+        productGrid.innerHTML = paginatedItems.map(product => `
+            <div class="product-card" data-id="${product.id}">
+                <div class="product-img">${renderProductMedia(product, 'product-img')}</div>
+                <div class="product-title">${product.name}</div>
+                <div>${renderDosageTag(product.dosage)}</div>
+                <div class="discount">${product.discount}% Off</div>
+                <div class="rating">${'⭐'.repeat(Math.floor(product.rating))} ${product.rating}</div>
+                <button class="add-to-cart" data-id="${product.id}"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+            </div>
+        `).join('');
+        let paginationHtml = '';
+        for (let i = 1; i <= Math.min(totalPages, 5); i++) paginationHtml += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        if (totalPages > 5) paginationHtml += `<span>...</span><button data-page="${totalPages}">${totalPages}</button>`;
+        document.getElementById('paginationControls').innerHTML = paginationHtml;
+        document.querySelectorAll('#paginationControls button').forEach(btn => btn.addEventListener('click', () => { currentPage = parseInt(btn.dataset.page); renderProducts(); window.scrollTo({ top: 600, behavior: 'smooth' }); }));
+        document.querySelectorAll('.add-to-cart').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); alert('Product added to cart (Demo)'); }));
+        document.querySelectorAll('.product-card').forEach(card => {
+            const productId = parseInt(card.dataset.id);
+            const product = allProducts.find(item => item.id === productId);
+            if (!product) return;
+            card.addEventListener('mouseenter', (event) => scheduleHoverPopup(product, event));
+            card.addEventListener('click', (event) => {
+                hideHoverPopup();
+                showStyledHoverPopup(product, getPointerPosition(event));
+            });
+            card.addEventListener('mousemove', (event) => {
+                lastHoverEvent = getPointerPosition(event);
+                if (hoverPopup.classList.contains('show')) {
+                    positionHoverPopup(event);
+                }
+            });
+            card.addEventListener('mouseleave', hideHoverPopup);
+        });
+    }
+
